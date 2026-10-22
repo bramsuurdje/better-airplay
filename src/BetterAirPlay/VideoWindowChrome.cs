@@ -12,7 +12,8 @@ namespace BetterAirPlay;
 /// - removes its title bar (keeping the resize edges on Windows 11) and gives it rounded corners, a dark border and the app icon;
 /// - fits it to the screen and centers it;
 /// - shows a HoverBar (title, minimize, full screen, close) that slides down when the mouse reaches the top.
-/// Create it on the UI thread: the window-event hook and the hover timer run through its message loop.
+///   Dragging the bar runs Windows' own move loop on the video window, so it snaps like a title bar drag.
+/// Create it on the UI thread: the window-event hooks and the hover timer run through its message loop.
 internal sealed class VideoWindowChrome : IDisposable
 {
     const string VideoWindowClass = "GSTD3D11"; // registered by GStreamer's d3d11 window code
@@ -26,11 +27,14 @@ internal sealed class VideoWindowChrome : IDisposable
     readonly Func<int?> receiverProcessId;
     readonly Icon smallIcon = TrayApp.LoadIcon("app.ico", SystemInformation.SmallIconSize);
     readonly Icon bigIcon = TrayApp.LoadIcon("app.ico", SystemInformation.IconSize);
-    readonly Native.WinEventProc onWindowShown; // held so the GC doesn't collect it while native code calls it
+    // Callbacks are held in fields so the GC doesn't collect them while native code calls them.
+    readonly Native.WinEventProc onWindowShown;
+    readonly Native.WinEventProc onVideoMoved;
     readonly IntPtr hook;
     readonly HoverBar bar = new();
     readonly Timer hoverCheck = new() { Interval = 50 };
     IntPtr video;           // the video window being decorated, or zero
+    IntPtr moveHook;        // location changes of the video window's thread, while there is a video window
     SavedFrame? fullscreen; // how to restore the window, while the full-screen button has it full screen
     DateTime lastHover;
     string title = Program.AppName;
@@ -50,13 +54,18 @@ internal sealed class VideoWindowChrome : IDisposable
         };
         hook = Native.SetWinEventHook(Native.EVENT_OBJECT_SHOW, Native.EVENT_OBJECT_SHOW, IntPtr.Zero, onWindowShown,
             0, 0, Native.WINEVENT_OUTOFCONTEXT | Native.WINEVENT_SKIPOWNPROCESS);
+        // Keeps the bar on the window as Windows moves, snaps or resizes it.
+        onVideoMoved = (_, _, hwnd, idObject, _, _, _) =>
+        {
+            if (idObject == Native.OBJID_WINDOW && hwnd == video && bar.Visible) bar.Place(VisibleBounds());
+        };
 
         hoverCheck.Tick += (_, _) => CheckHover();
         bar.Title = title;
         bar.MinimizeClicked += Minimize;
         bar.FullscreenClicked += ToggleFullscreen;
         bar.CloseClicked += Close;
-        bar.Dragged += Move;
+        bar.DragStarted += StartMove;
     }
 
     /// Title for the video window and its bar, normally the connected device's name.
@@ -86,6 +95,10 @@ internal sealed class VideoWindowChrome : IDisposable
         video = hwnd;
         fullscreen = null;
         bar.SetFullscreen(false);
+        Native.UnhookWinEvent(moveHook);
+        var thread = Native.GetWindowThreadProcessId(hwnd, out var pid);
+        moveHook = Native.SetWinEventHook(Native.EVENT_OBJECT_LOCATIONCHANGE, Native.EVENT_OBJECT_LOCATIONCHANGE, IntPtr.Zero,
+            onVideoMoved, (uint)pid, thread, Native.WINEVENT_OUTOFCONTEXT);
 
         SetDwmAttribute(hwnd, Native.DWMWA_USE_IMMERSIVE_DARK_MODE, 1);
         SetDwmAttribute(hwnd, Native.DWMWA_BORDER_COLOR, 0x262626);           // Windows 11 only
@@ -122,6 +135,8 @@ internal sealed class VideoWindowChrome : IDisposable
         {
             video = IntPtr.Zero;
             fullscreen = null;
+            Native.UnhookWinEvent(moveHook);
+            moveHook = IntPtr.Zero;
             hoverCheck.Stop();
             bar.Conceal(immediate: true);
             return;
@@ -189,16 +204,16 @@ internal sealed class VideoWindowChrome : IDisposable
                 Native.SWP_FRAMECHANGED | Native.SWP_NOZORDER | Native.SWP_NOACTIVATE);
         }
         bar.SetFullscreen(fullscreen is not null);
-        bar.Place(VisibleBounds());
     }
 
-    void Move(Size delta)
+    /// Hands the bar's drag to the video window as if its title bar was pressed. Windows' move loop then runs in
+    /// the uxplay process and brings edge snapping, the Snap Layouts flyout and drag-to-restore from maximized.
+    /// Posted, not sent: sending would block this thread until the drag ends, and the bar couldn't follow.
+    void StartMove()
     {
         if (fullscreen is not null) return;
-        Native.GetWindowRect(video, out var rect);
-        Native.SetWindowPos(video, IntPtr.Zero, rect.Left + delta.Width, rect.Top + delta.Height, 0, 0,
-            Native.SWP_NOSIZE | Native.SWP_NOZORDER | Native.SWP_NOACTIVATE);
-        bar.Place(VisibleBounds());
+        Native.SetForegroundWindow(video); // a title bar drag activates its window too
+        Native.PostMessage(video, Native.WM_SYSCOMMAND, (IntPtr)(Native.SC_MOVE | Native.HTCAPTION), IntPtr.Zero);
     }
 
     /// The window's visible edges; GetWindowRect would include the invisible resize borders.
@@ -219,6 +234,7 @@ internal sealed class VideoWindowChrome : IDisposable
     public void Dispose()
     {
         Native.UnhookWinEvent(hook);
+        Native.UnhookWinEvent(moveHook);
         hoverCheck.Dispose();
         bar.Dispose();
         smallIcon.Dispose();

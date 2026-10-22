@@ -21,14 +21,14 @@ internal sealed class HoverBar : Form
     DateTime lastFrame;
     double position; // 0 = hidden, 1 = fully down; moves linearly with time and is eased when drawn
     bool revealing;  // the direction the bar is heading
-    Point dragOrigin;
+    Point? pressedAt; // where a left press on the title happened, until it is released or becomes a drag
 
     public event Action? MinimizeClicked;
     public event Action? FullscreenClicked;
     public event Action? CloseClicked;
 
-    /// The user dragged the bar by this many pixels.
-    public event Action<Size>? Dragged;
+    /// The user started dragging the bar with the left button still down; the video window should take over the drag.
+    public event Action? DragStarted;
 
     public HoverBar()
     {
@@ -45,17 +45,21 @@ internal sealed class HoverBar : Form
         title.ForeColor = Color.FromArgb(220, 220, 220);
         title.Font = new Font("Segoe UI", 9f);
         title.AutoEllipsis = true;
-        title.MouseDown += (_, _) =>
+        title.MouseDown += (_, e) =>
         {
-            dragOrigin = Cursor.Position;
-            title.Capture = true; // keep getting moves even if the cursor outruns the bar
+            if (e.Button == MouseButtons.Left) pressedAt = Cursor.Position;
         };
-        title.MouseMove += (_, e) =>
+        title.MouseUp += (_, _) => pressedAt = null;
+        title.MouseMove += (_, _) =>
         {
-            if (e.Button != MouseButtons.Left) return;
+            // Wait for the drag threshold so a click or double-click stays a click.
+            if (pressedAt is not { } origin) return;
+            var threshold = SystemInformation.DragSize;
             var now = Cursor.Position;
-            Dragged?.Invoke(new Size(now.X - dragOrigin.X, now.Y - dragOrigin.Y));
-            dragOrigin = now;
+            if (Math.Abs(now.X - origin.X) <= threshold.Width / 2 && Math.Abs(now.Y - origin.Y) <= threshold.Height / 2) return;
+            pressedAt = null;
+            title.Capture = false; // the video window's move loop takes the mouse from here
+            DragStarted?.Invoke();
         };
         title.DoubleClick += (_, _) => FullscreenClicked?.Invoke();
 
@@ -116,7 +120,7 @@ internal sealed class HoverBar : Form
         StartAnimation();
     }
 
-    /// Keeps the bar lined up with the video window, e.g. while it is dragged.
+    /// Keeps the bar lined up with the video window, e.g. while it is dragged or snapped.
     public void Place(Rectangle videoBounds)
     {
         Location = videoBounds.Location;
