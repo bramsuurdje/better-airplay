@@ -18,8 +18,9 @@ internal sealed class HoverBar : Form
     readonly Label title = new();
     readonly Button fullscreenButton;
     readonly Timer animation = new() { Interval = 15 };
-    DateTime animationStart;
-    bool revealing;
+    DateTime lastFrame;
+    double position; // 0 = hidden, 1 = fully down; moves linearly with time and is eased when drawn
+    bool revealing;  // the direction the bar is heading
     Point dragOrigin;
 
     public event Action? MinimizeClicked;
@@ -82,31 +83,37 @@ internal sealed class HoverBar : Form
     public void SetFullscreen(bool fullscreen) =>
         fullscreenButton.Text = fullscreen ? "" : ""; // "back to window" / "full screen"
 
-    /// Slides the bar down along the top edge of the given area.
+    /// Slides the bar down along the top edge of the given area. Safe to call repeatedly; if the bar is sliding
+    /// up, it turns around from where it is.
     public void Reveal(Rectangle videoBounds)
     {
         Place(videoBounds);
         if (revealing) return;
         revealing = true;
-        Height = 1;
-        Show();
+        if (!Visible)
+        {
+            position = 0;
+            Draw();
+            Show();
+        }
         StartAnimation();
     }
 
-    /// Slides the bar back up; with immediate, it just disappears.
+    /// Slides the bar back up; with immediate, it just disappears. Safe to call repeatedly.
     public void Conceal(bool immediate = false)
     {
         if (!Visible) return;
-        revealing = false;
         if (immediate)
         {
+            revealing = false;
             animation.Stop();
+            position = 0;
             Hide();
+            return;
         }
-        else
-        {
-            StartAnimation();
-        }
+        if (!revealing) return; // already on its way up
+        revealing = false;
+        StartAnimation();
     }
 
     /// Keeps the bar lined up with the video window, e.g. while it is dragged.
@@ -131,21 +138,29 @@ internal sealed class HoverBar : Form
 
     void StartAnimation()
     {
-        animationStart = DateTime.UtcNow;
+        if (animation.Enabled) return; // a running animation just follows the new direction
+        lastFrame = DateTime.UtcNow;
         animation.Start();
     }
 
     void Animate()
     {
-        var t = Math.Min(1.0, (DateTime.UtcNow - animationStart).TotalMilliseconds / AnimationMs);
-        var eased = 1 - Math.Pow(1 - t, 3); // ease-out cubic
-        var progress = revealing ? eased : 1 - eased;
-        var height = Math.Max(1, (int)Math.Round(BarHeight * progress));
-        Height = height;
-        content.Top = height - BarHeight; // the content slides down with the bottom edge
-        if (t < 1) return;
+        var now = DateTime.UtcNow;
+        var step = (now - lastFrame).TotalMilliseconds / AnimationMs;
+        lastFrame = now;
+        position = revealing ? Math.Min(1, position + step) : Math.Max(0, position - step);
+        Draw();
+        if (revealing ? position < 1 : position > 0) return;
         animation.Stop();
         if (!revealing) Hide();
+    }
+
+    void Draw()
+    {
+        var eased = 1 - Math.Pow(1 - position, 3); // ease-out cubic going down, ease-in going up
+        var height = Math.Max(1, (int)Math.Round(BarHeight * eased));
+        Height = height;
+        content.Top = height - BarHeight; // the content slides down with the bottom edge
     }
 
     Button CaptionButton(string glyph, Color hover, Action onClick)
