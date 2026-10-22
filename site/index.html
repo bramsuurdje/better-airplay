@@ -2,17 +2,58 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f3f4f8" />
-    <title>Better AirPlay: mirror your iPhone, iPad or Mac to a Windows PC</title>
+    <title>Better AirPlay: mirror your iPhone, iPad or Mac to Windows</title>
     <meta
       name="description"
       content="Better AirPlay puts your Windows PC in the Screen Mirroring list on your iPhone, iPad and Mac. Free, one installer, nothing to configure."
     />
-    <meta property="og:title" content="Better AirPlay" />
-    <meta property="og:description" content="AirPlay to your Windows PC. Free, one installer, nothing to configure." />
+    <link rel="canonical" href="%VITE_SITE_URL%/" />
+    <meta name="author" content="Suurd Digital" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f3f4f8" />
+
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Link previews. X reads these Open Graph tags too, so it only needs twitter:card. -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Better AirPlay" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:url" content="%VITE_SITE_URL%/" />
+    <meta property="og:title" content="Better AirPlay: AirPlay to your Windows PC" />
+    <meta
+      property="og:description"
+      content="Mirror your iPhone, iPad or Mac to a Windows PC. Free, one installer, nothing to configure."
+    />
+    <meta property="og:image" content="%VITE_SITE_URL%/og.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Better AirPlay: AirPlay to your Windows PC. An iPhone picks Living room PC under Screen Mirroring, and its screen opens in a window on a Windows desktop."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Better AirPlay",
+        "description": "Puts your Windows PC in the Screen Mirroring list on your iPhone, iPad and Mac.",
+        "url": "%VITE_SITE_URL%/",
+        "image": "%VITE_SITE_URL%/og.png",
+        "downloadUrl": "https://github.com/bramsuurdje/better-airplay/releases/latest/download/BetterAirPlay-Setup.exe",
+        "operatingSystem": "Windows 10, Windows 11",
+        "applicationCategory": "UtilitiesApplication",
+        "isAccessibleForFree": true,
+        "license": "https://opensource.org/licenses/MIT",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+        "publisher": { "@type": "Organization", "name": "Suurd Digital", "url": "https://suurd.digital/" }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

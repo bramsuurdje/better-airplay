@@ -47,15 +47,15 @@ function prefersReducedMotion() {
 /**
  * Loops through STEPS while at least half the scene is visible and resets when it scrolls away.
  * A cycle that ends while the pointer is over the scene waits, so the window's bar can be tried.
- * With reduced motion it stays on the final step.
+ * When not animated, or with reduced motion, it stays on the final step.
  */
-function useLoopingSequence() {
+function useLoopingSequence(animated: boolean) {
   const ref = useRef<HTMLDivElement>(null)
-  const [step, setStep] = useState(() => (prefersReducedMotion() ? SETTLED : 0))
+  const [step, setStep] = useState(() => (!animated || prefersReducedMotion() ? SETTLED : 0))
 
   useEffect(() => {
     const scene = ref.current
-    if (!scene || prefersReducedMotion()) return
+    if (!scene || !animated || prefersReducedMotion()) return
 
     let timers: number[] = []
     let hovering = false
@@ -105,13 +105,14 @@ function useLoopingSequence() {
       scene.removeEventListener('pointerleave', onLeave)
       stop()
     }
-  }, [])
+  }, [animated])
 
   return { ref, step }
 }
 
-export function HeroScene() {
-  const { ref, step } = useLoopingSequence()
+/** Pass animated={false} to show only the final, connected frame, as the social preview image does. */
+export function HeroScene({ animated = true }: { animated?: boolean }) {
+  const { ref, step } = useLoopingSequence(animated)
 
   return (
     <div
