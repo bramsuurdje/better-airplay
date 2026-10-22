@@ -9,6 +9,7 @@ namespace BetterAirPlay;
 internal static class Native
 {
     public const uint EVENT_OBJECT_SHOW = 0x8002;
+    public const uint EVENT_OBJECT_LOCATIONCHANGE = 0x800B;
     public const uint WINEVENT_OUTOFCONTEXT = 0x0000;
     public const uint WINEVENT_SKIPOWNPROCESS = 0x0002;
     public const int OBJID_WINDOW = 0;
@@ -23,6 +24,9 @@ internal static class Native
     public const uint WM_SETTEXT = 0x000C;
     public const uint WM_CLOSE = 0x0010;
     public const uint WM_SETICON = 0x0080;
+    public const uint WM_SYSCOMMAND = 0x0112;
+    public const int SC_MOVE = 0xF010;
+    public const int HTCAPTION = 2; // in the low bits of SC_MOVE: the move is driven by the mouse, as from a title bar
     public const int ICON_SMALL = 0;
     public const int ICON_BIG = 1;
     public const uint SMTO_ABORTIFHUNG = 0x0002;
@@ -105,9 +109,6 @@ internal static class Native
     public static extern bool GetClientRect(IntPtr hwnd, out RECT rect);
 
     [DllImport("user32.dll")]
-    public static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
-
-    [DllImport("user32.dll")]
     public static extern bool GetWindowPlacement(IntPtr hwnd, ref WINDOWPLACEMENT placement);
 
     [DllImport("user32.dll")]
@@ -115,6 +116,9 @@ internal static class Native
 
     [DllImport("user32.dll")]
     public static extern bool ShowWindowAsync(IntPtr hwnd, int command);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hwnd);
 
     [DllImport("user32.dll")]
     public static extern bool IsWindow(IntPtr hwnd);
