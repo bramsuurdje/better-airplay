@@ -1,9 +1,18 @@
 name: Build
 
 on:
+  # Only changes that end up in the installer build (and release) the app. Docs and site/ changes don't.
   push:
     branches: [main]
+    paths: &app-paths
+      - src/**
+      - installer/**
+      - scripts/**
+      - assets/**
+      - THIRD-PARTY-NOTICES.md
+      - .github/workflows/build.yml
   pull_request:
+    paths: *app-paths
   workflow_dispatch:
 
 permissions:
