@@ -3,7 +3,6 @@ name: Build
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -11,6 +10,8 @@ permissions:
   contents: read
 
 env:
+  # Every build on main is released as v<VERSION_PREFIX>.<run number>. Bump this for a new minor/major.
+  VERSION_PREFIX: "0.1"
   # UxPlay master with the built-in mDNS responder (new in 1.74, not in a tagged release yet).
   UXPLAY_COMMIT: 0477d471cc5899ea13382b5871cf70dbfe050ebd
 
@@ -50,12 +51,7 @@ jobs:
       - name: Pick version
         id: version
         shell: bash
-        run: |
-          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
-            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=0.0.$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
-          fi
+        run: echo "version=$VERSION_PREFIX.$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-dotnet@v6
         with:
@@ -91,7 +87,7 @@ jobs:
 
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -103,4 +99,7 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/*.exe --repo "$GITHUB_REPOSITORY" --generate-notes
+        # Creates the tag on the built commit. Tags pushed with GITHUB_TOKEN don't trigger workflows, so this can't loop.
+        run: |
+          gh release create "v$VERSION_PREFIX.$GITHUB_RUN_NUMBER" dist/*.exe \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --generate-notes --latest

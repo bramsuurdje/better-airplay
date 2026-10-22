@@ -39,7 +39,7 @@ DRM-protected video (for example, the Apple TV app) can't be mirrored. One devic
 | `scripts/bundle-receiver.sh` | Builds UxPlay at a pinned commit in MSYS2. Copies it, the GStreamer plugins, and their DLLs into `receiver/`. |
 | `scripts/smoke-test-receiver.ps1` | Checks that the bundle runs without MSYS2 and that all required GStreamer elements are present. |
 | `installer/BetterAirPlay.iss` | Inno Setup installer. Installs to Program Files and adds the firewall rule. |
-| `.github/workflows/build.yml` | Builds everything on `windows-latest` and uploads the installer as an artifact. A `v*` tag publishes a GitHub release. |
+| `.github/workflows/build.yml` | Builds everything on `windows-latest` and uploads the installer as an artifact. Every push to `main` publishes a GitHub release. |
 
 The tray app runs `receiver\bin\uxplay.exe -n "<name>" -nh -vs d3d11videosink [-pin nnnn]`. It sets the `GST_*`
 variables so GStreamer loads only the bundled plugins.
@@ -55,9 +55,8 @@ run `scripts/bundle-receiver.sh` in an MSYS2 UCRT64 shell.
 
 ### Release
 
-```sh
-git tag v0.1.0 && git push origin v0.1.0
-```
+Every push to `main` builds and publishes a release tagged `v<VERSION_PREFIX>.<run number>` (for example `v0.1.2`).
+To start a new minor or major version, change `VERSION_PREFIX` in the workflow. Pull requests only build.
 
 To update UxPlay, change `UXPLAY_COMMIT` in the workflow.
 
