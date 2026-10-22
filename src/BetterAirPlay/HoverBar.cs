@@ -1,0 +1,177 @@
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace BetterAirPlay;
+
+/// The title bar that slides down over the top of the video when the mouse gets there.
+/// It only draws and reports clicks; VideoWindowChrome decides when to show it and acts on the clicks.
+internal sealed class HoverBar : Form
+{
+    const int LogicalHeight = 36;
+    const int AnimationMs = 140;
+    static readonly Color Background = Color.FromArgb(24, 24, 24);
+    static readonly Color Hover = Color.FromArgb(55, 55, 55);
+    static readonly Color CloseHover = Color.FromArgb(196, 43, 28); // Windows' own close-button red
+
+    readonly Panel content = new();
+    readonly Label title = new();
+    readonly Button fullscreenButton;
+    readonly Timer animation = new() { Interval = 15 };
+    DateTime animationStart;
+    bool revealing;
+    Point dragOrigin;
+
+    public event Action? MinimizeClicked;
+    public event Action? FullscreenClicked;
+    public event Action? CloseClicked;
+
+    /// The user dragged the bar by this many pixels.
+    public event Action<Size>? Dragged;
+
+    public HoverBar()
+    {
+        FormBorderStyle = FormBorderStyle.None;
+        ShowInTaskbar = false;
+        TopMost = true;
+        StartPosition = FormStartPosition.Manual;
+        BackColor = Background;
+        AutoScaleMode = AutoScaleMode.None; // sizes below are already converted with LogicalToDeviceUnits
+
+        title.Dock = DockStyle.Fill;
+        title.TextAlign = ContentAlignment.MiddleLeft;
+        title.Padding = new Padding(12, 0, 0, 0);
+        title.ForeColor = Color.FromArgb(220, 220, 220);
+        title.Font = new Font("Segoe UI", 9f);
+        title.AutoEllipsis = true;
+        title.MouseDown += (_, _) =>
+        {
+            dragOrigin = Cursor.Position;
+            title.Capture = true; // keep getting moves even if the cursor outruns the bar
+        };
+        title.MouseMove += (_, e) =>
+        {
+            if (e.Button != MouseButtons.Left) return;
+            var now = Cursor.Position;
+            Dragged?.Invoke(new Size(now.X - dragOrigin.X, now.Y - dragOrigin.Y));
+            dragOrigin = now;
+        };
+        title.DoubleClick += (_, _) => FullscreenClicked?.Invoke();
+
+        // Glyphs from Segoe MDL2 Assets, the icon font Windows' own title bars use.
+        fullscreenButton = CaptionButton("", Hover, () => FullscreenClicked?.Invoke());
+        content.Controls.Add(title);
+        content.Controls.Add(CaptionButton("", Hover, () => MinimizeClicked?.Invoke()));
+        content.Controls.Add(fullscreenButton);
+        content.Controls.Add(CaptionButton("", CloseHover, () => CloseClicked?.Invoke()));
+        content.Height = BarHeight;
+        content.Dock = DockStyle.None;
+        Controls.Add(content);
+
+        animation.Tick += (_, _) => Animate();
+    }
+
+    public int BarHeight => LogicalToDeviceUnits(LogicalHeight);
+
+    public string Title
+    {
+        get => title.Text;
+        set => title.Text = value;
+    }
+
+    public void SetFullscreen(bool fullscreen) =>
+        fullscreenButton.Text = fullscreen ? "" : ""; // "back to window" / "full screen"
+
+    /// Slides the bar down along the top edge of the given area.
+    public void Reveal(Rectangle videoBounds)
+    {
+        Place(videoBounds);
+        if (revealing) return;
+        revealing = true;
+        Height = 1;
+        Show();
+        StartAnimation();
+    }
+
+    /// Slides the bar back up; with immediate, it just disappears.
+    public void Conceal(bool immediate = false)
+    {
+        if (!Visible) return;
+        revealing = false;
+        if (immediate)
+        {
+            animation.Stop();
+            Hide();
+        }
+        else
+        {
+            StartAnimation();
+        }
+    }
+
+    /// Keeps the bar lined up with the video window, e.g. while it is dragged.
+    public void Place(Rectangle videoBounds)
+    {
+        Location = videoBounds.Location;
+        Width = videoBounds.Width;
+        content.Width = videoBounds.Width;
+    }
+
+    protected override bool ShowWithoutActivation => true;
+
+    protected override CreateParams CreateParams
+    {
+        get
+        {
+            var cp = base.CreateParams;
+            cp.ExStyle |= Native.WS_EX_TOOLWINDOW | Native.WS_EX_NOACTIVATE; // no Alt+Tab entry, never steals focus
+            return cp;
+        }
+    }
+
+    void StartAnimation()
+    {
+        animationStart = DateTime.UtcNow;
+        animation.Start();
+    }
+
+    void Animate()
+    {
+        var t = Math.Min(1.0, (DateTime.UtcNow - animationStart).TotalMilliseconds / AnimationMs);
+        var eased = 1 - Math.Pow(1 - t, 3); // ease-out cubic
+        var progress = revealing ? eased : 1 - eased;
+        var height = Math.Max(1, (int)Math.Round(BarHeight * progress));
+        Height = height;
+        content.Top = height - BarHeight; // the content slides down with the bottom edge
+        if (t < 1) return;
+        animation.Stop();
+        if (!revealing) Hide();
+    }
+
+    Button CaptionButton(string glyph, Color hover, Action onClick)
+    {
+        var button = new Button
+        {
+            Text = glyph,
+            Font = new Font("Segoe MDL2 Assets", 10f),
+            ForeColor = Color.FromArgb(230, 230, 230),
+            FlatStyle = FlatStyle.Flat,
+            Dock = DockStyle.Right,
+            Width = LogicalToDeviceUnits(46),
+            TabStop = false,
+            UseVisualStyleBackColor = false,
+            BackColor = Background,
+        };
+        button.FlatAppearance.BorderSize = 0;
+        button.FlatAppearance.MouseOverBackColor = hover;
+        button.FlatAppearance.MouseDownBackColor = hover;
+        button.Click += (_, _) => onClick();
+        return button;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) animation.Dispose();
+        base.Dispose(disposing);
+    }
+}

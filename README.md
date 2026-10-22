@@ -23,8 +23,9 @@ Right-click the tray icon to:
 - open the receiver log
 - check for updates. The app also checks at startup and offers to install new versions; you can turn that off in the menu.
 
-The video opens in its own dark window, titled with the name of the connected device. Press **Alt+Enter** there to
-toggle full screen.
+The video opens centered in a window without a title bar. Move the mouse to the top of the video and a bar slides
+down with the device name and buttons to minimize, go full screen, and close. Closing ends the mirroring session; the
+receiver stays on. Drag the bar to move the window, or double-click it to toggle full screen.
 
 ### If your PC doesn't show up
 

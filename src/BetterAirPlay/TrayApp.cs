@@ -15,7 +15,7 @@ internal sealed class TrayApp : ApplicationContext
     readonly Receiver receiver = new();
     readonly Icon onIcon = LoadIcon("app.ico", SystemInformation.SmallIconSize);
     readonly Icon offIcon = LoadIcon("app-off.ico", SystemInformation.SmallIconSize);
-    readonly VideoWindowStyler videoWindow;
+    readonly VideoWindowChrome videoWindow;
     readonly NotifyIcon tray = new();
     readonly ToolStripMenuItem statusItem = new() { Enabled = false };
     readonly ToolStripMenuItem codeItem = new() { Enabled = false };
@@ -32,7 +32,7 @@ internal sealed class TrayApp : ApplicationContext
 
     public TrayApp()
     {
-        videoWindow = new VideoWindowStyler(() => receiver.ProcessId);
+        videoWindow = new VideoWindowChrome(() => receiver.ProcessId);
         toggleItem.Click += (_, _) => SetReceiving(!receiver.IsRunning);
         pinItem.Click += (_, _) => TogglePin();
         lowLatencyItem.Click += (_, _) => ToggleLowLatency();
