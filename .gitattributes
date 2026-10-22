@@ -1,0 +1,4 @@
+* text=auto
+# Run by MSYS2 bash on Windows runners, which chokes on CRLF.
+*.sh text eol=lf
+*.ico binary

@@ -1,0 +1,106 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # UxPlay master with the built-in mDNS responder (new in 1.74, not in a tagged release yet).
+  UXPLAY_COMMIT: 0477d471cc5899ea13382b5871cf70dbfe050ebd
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Restore receiver bundle
+        id: receiver-cache
+        uses: actions/cache@v6
+        with:
+          path: dist/receiver
+          key: receiver-${{ env.UXPLAY_COMMIT }}-${{ hashFiles('scripts/bundle-receiver.sh') }}
+
+      - name: Set up MSYS2
+        if: steps.receiver-cache.outputs.cache-hit != 'true'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: git
+          pacboy: >-
+            cmake:p ninja:p gcc:p openssl:p libplist:p
+            gstreamer:p gst-plugins-base:p gst-plugins-good:p gst-plugins-bad:p gst-libav:p
+
+      - name: Build receiver bundle
+        if: steps.receiver-cache.outputs.cache-hit != 'true'
+        shell: msys2 {0}
+        run: bash scripts/bundle-receiver.sh "$UXPLAY_COMMIT" dist/receiver
+
+      - name: Smoke-test receiver bundle
+        shell: pwsh
+        run: ./scripts/smoke-test-receiver.ps1 dist/receiver
+
+      - name: Pick version
+        id: version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Build tray app
+        run: dotnet build src/BetterAirPlay -c Release -p:Version=${{ steps.version.outputs.version }} -o dist/app
+
+      - name: Stage app
+        shell: pwsh
+        run: |
+          Remove-Item dist/app/*.pdb
+          Copy-Item dist/receiver dist/app/receiver -Recurse
+          Copy-Item THIRD-PARTY-NOTICES.md dist/app/
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" `
+            "/DAppVersion=${{ steps.version.outputs.version }}" `
+            "/DAppDir=$PWD\dist\app" `
+            "/DOutDir=$PWD\dist\installer" `
+            installer\BetterAirPlay.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Get-ChildItem dist\installer | Format-Table Name, @{ n = 'MB'; e = { [math]::Round($_.Length / 1MB, 1) } }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: BetterAirPlay-Setup
+          path: dist/installer/*.exe
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: BetterAirPlay-Setup
+          path: dist
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.exe --repo "$GITHUB_REPOSITORY" --generate-notes
