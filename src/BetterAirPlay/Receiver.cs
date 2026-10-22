@@ -32,14 +32,16 @@ internal sealed class Receiver
     public int? ProcessId => process?.Id;
     public IEnumerable<string> Log => log;
 
-    public void Start(string name, string? pin)
+    /// lowLatency shows each frame as soon as it is decoded (UxPlay -vsync no) instead of holding it back to line
+    /// up with the audio: snappier mirroring, but sound in videos can drift from the picture.
+    public void Start(string name, string? pin, bool lowLatency)
     {
         if (process is not null) throw new InvalidOperationException("The receiver is already running.");
         if (!File.Exists(ExePath)) throw new FileNotFoundException($"The receiver is missing. Reinstall {Program.AppName}.", ExePath);
         Directory.CreateDirectory(DataDir);
 
         // Settings.ValidateName rules out quotes and backslashes, so plain quoting is safe.
-        var args = $"-n \"{name}\" -nh -vs d3d11videosink" + (pin is null ? "" : $" -pin {pin}");
+        var args = $"-n \"{name}\" -nh -vs d3d11videosink" + (pin is null ? "" : $" -pin {pin}") + (lowLatency ? " -vsync no" : "");
         var info = new ProcessStartInfo(ExePath, args)
         {
             UseShellExecute = false,

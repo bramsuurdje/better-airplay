@@ -24,6 +24,9 @@ internal sealed class Settings
     /// Whether to look for a newer release each time the app starts.
     public bool CheckForUpdates { get; set; } = true;
 
+    /// Whether to favor responsiveness over audio/video sync; see Receiver.Start.
+    public bool LowLatency { get; set; } = true;
+
     public static Settings Load()
     {
         var settings = new Settings();
@@ -34,6 +37,7 @@ internal sealed class Settings
         if (key.GetValue(nameof(Pin)) is string pin && IsPin(pin)) settings.Pin = pin;
         if (key.GetValue(nameof(Receiving)) is int receiving) settings.Receiving = receiving != 0;
         if (key.GetValue(nameof(CheckForUpdates)) is int check) settings.CheckForUpdates = check != 0;
+        if (key.GetValue(nameof(LowLatency)) is int lowLatency) settings.LowLatency = lowLatency != 0;
         return settings;
     }
 
@@ -44,6 +48,7 @@ internal sealed class Settings
         key.SetValue(nameof(Pin), Pin ?? "");
         key.SetValue(nameof(Receiving), Receiving ? 1 : 0, RegistryValueKind.DWord);
         key.SetValue(nameof(CheckForUpdates), CheckForUpdates ? 1 : 0, RegistryValueKind.DWord);
+        key.SetValue(nameof(LowLatency), LowLatency ? 1 : 0, RegistryValueKind.DWord);
     }
 
     /// Returns why a name can't be used, or null when it's valid.

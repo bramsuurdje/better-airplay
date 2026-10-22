@@ -21,6 +21,7 @@ internal sealed class TrayApp : ApplicationContext
     readonly ToolStripMenuItem codeItem = new() { Enabled = false };
     readonly ToolStripMenuItem toggleItem = new();
     readonly ToolStripMenuItem pinItem = new("Require connection code");
+    readonly ToolStripMenuItem lowLatencyItem = new("Low latency (screen mirroring)") { ToolTipText = "Turn off to keep sound in sync with video when watching films." };
     readonly ToolStripMenuItem autostartItem = new("Start with Windows");
     readonly ToolStripMenuItem checkAtStartupItem = new("Check for updates at startup");
     readonly ToolStripMenuItem updateItem = new();
@@ -34,6 +35,7 @@ internal sealed class TrayApp : ApplicationContext
         videoWindow = new VideoWindowStyler(() => receiver.ProcessId);
         toggleItem.Click += (_, _) => SetReceiving(!receiver.IsRunning);
         pinItem.Click += (_, _) => TogglePin();
+        lowLatencyItem.Click += (_, _) => ToggleLowLatency();
         autostartItem.Click += (_, _) => Autostart.Enabled = !Autostart.Enabled;
         checkAtStartupItem.Click += (_, _) => ToggleCheckAtStartup();
         updateItem.Click += (_, _) =>
@@ -52,6 +54,7 @@ internal sealed class TrayApp : ApplicationContext
             new ToolStripSeparator(),
             new ToolStripMenuItem("Change name…", null, (_, _) => Rename()),
             pinItem,
+            lowLatencyItem,
             autostartItem,
             checkAtStartupItem,
             new ToolStripSeparator(),
@@ -89,7 +92,7 @@ internal sealed class TrayApp : ApplicationContext
     {
         try
         {
-            receiver.Start(settings.ReceiverName, settings.Pin);
+            receiver.Start(settings.ReceiverName, settings.Pin, settings.LowLatency);
         }
         catch (Exception e)
         {
@@ -124,6 +127,14 @@ internal sealed class TrayApp : ApplicationContext
         {
             Notify($"Connection code: {settings.Pin}", "Devices enter this code the first time they connect.");
         }
+    }
+
+    void ToggleLowLatency()
+    {
+        settings.LowLatency = !settings.LowLatency;
+        settings.Save();
+        Restart();
+        Refresh();
     }
 
     void ToggleCheckAtStartup()
@@ -222,6 +233,7 @@ internal sealed class TrayApp : ApplicationContext
         codeItem.Visible = running && settings.Pin is not null;
         toggleItem.Text = running ? "Stop receiving" : "Start receiving";
         pinItem.Checked = settings.Pin is not null;
+        lowLatencyItem.Checked = settings.LowLatency;
         checkAtStartupItem.Checked = settings.CheckForUpdates;
         updateItem.Enabled = !installingUpdate;
         updateItem.Text = (installingUpdate, availableUpdate) switch

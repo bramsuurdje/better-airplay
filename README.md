@@ -17,6 +17,8 @@ Right-click the tray icon to:
 - start or stop receiving (double-clicking the icon does this too)
 - change the name Apple devices see
 - require a 4-digit connection code. The code is shown in the menu, and devices enter it once.
+- switch low latency on or off. It is on by default and makes mirroring feel snappier. Turn it off when watching
+  films, so the sound stays in sync with the picture.
 - start the app when you sign in to Windows
 - open the receiver log
 - check for updates. The app also checks at startup and offers to install new versions; you can turn that off in the menu.
@@ -43,7 +45,7 @@ DRM-protected video (for example, the Apple TV app) can't be mirrored. One devic
 | `installer/BetterAirPlay.iss` | Inno Setup installer. Installs to Program Files and adds the firewall rule. |
 | `.github/workflows/build.yml` | Builds everything on `windows-latest` and uploads the installer as an artifact. Every push to `main` publishes a GitHub release. |
 
-The tray app runs `receiver\bin\uxplay.exe -n "<name>" -nh -vs d3d11videosink [-pin nnnn]`. It sets the `GST_*`
+The tray app runs `receiver\bin\uxplay.exe -n "<name>" -nh -vs d3d11videosink [-pin nnnn] [-vsync no]`. It sets the `GST_*`
 variables so GStreamer loads only the bundled plugins.
 
 ### Develop
