@@ -1,3 +1,4 @@
+| `site/` | The website. Vite, React, Tailwind and shadcn. `.github/workflows/pages.yml` deploys it to GitHub Pages on every push to `main`. The download button links to `releases/latest/download/BetterAirPlay-Setup.exe`, which the release step attaches alongside the versioned installer. |
 <img src="assets/icon.svg" width="64" height="64" alt="">
 
 # Better AirPlay
@@ -45,6 +46,7 @@ DRM-protected video (for example, the Apple TV app) can't be mirrored. One devic
 | `scripts/smoke-test-receiver.ps1` | Checks that the bundle runs without MSYS2 and that all required GStreamer elements are present. |
 | `installer/BetterAirPlay.iss` | Inno Setup installer. Installs to Program Files and adds the firewall rule. |
 | `.github/workflows/build.yml` | Builds everything on `windows-latest` and uploads the installer as an artifact. Every push to `main` publishes a GitHub release. |
+| `site/` | The website: Vite, React, Tailwind and shadcn. `.github/workflows/pages.yml` deploys it to GitHub Pages on every push to `main`. Its download button links to `releases/latest/download/BetterAirPlay-Setup.exe`, which the release step attaches next to the versioned installer. |
 
 The tray app runs `receiver\bin\uxplay.exe -n "<name>" -nh -vs d3d11videosink [-pin nnnn] [-vsync no]`. It sets the `GST_*`
 variables so GStreamer loads only the bundled plugins.

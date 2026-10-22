@@ -1,0 +1,563 @@
+/* Everything inside the scene is sized in --u, which is 1% of the scene's width, so it scales as one picture. */
+.scene {
+  --u: 1cqw;
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  padding-bottom: calc(var(--u) * 5);
+}
+
+/* Windows desktop */
+.desktop {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: calc(var(--u) * 1.4);
+  background:
+    radial-gradient(70% 90% at 18% 24%, #c8d5ff 0%, transparent 62%),
+    radial-gradient(55% 70% at 84% 78%, #ffd8c9 0%, transparent 60%),
+    radial-gradient(40% 50% at 60% 20%, #e9ddff 0%, transparent 60%),
+    linear-gradient(160deg, #e3e8f6 0%, #cdd7ee 100%);
+  box-shadow:
+    0 calc(var(--u) * 2.5) calc(var(--u) * 6) rgba(26, 28, 38, 0.18),
+    0 0 0 1px rgba(26, 28, 38, 0.08);
+}
+
+.taskbar {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(var(--u) * 5.2);
+  padding: 0 calc(var(--u) * 1.6);
+  background: rgba(243, 244, 248, 0.82);
+  border-top: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(calc(var(--u) * 2));
+}
+
+.taskbar-apps {
+  display: flex;
+  gap: calc(var(--u) * 1.1);
+}
+
+.taskbar-logo,
+.taskbar-app {
+  width: calc(var(--u) * 2.4);
+  height: calc(var(--u) * 2.4);
+  border-radius: calc(var(--u) * 0.5);
+}
+
+.taskbar-logo {
+  background:
+    linear-gradient(#2f7cf6, #2f7cf6) 0 0 / 46% 46% no-repeat,
+    linear-gradient(#2f7cf6, #2f7cf6) 100% 0 / 46% 46% no-repeat,
+    linear-gradient(#2f7cf6, #2f7cf6) 0 100% / 46% 46% no-repeat,
+    linear-gradient(#2f7cf6, #2f7cf6) 100% 100% / 46% 46% no-repeat;
+  border-radius: 0;
+}
+
+.taskbar-app {
+  background: rgba(26, 28, 38, 0.12);
+}
+
+.taskbar-app:nth-child(2) {
+  background: #f2c14e;
+}
+
+.taskbar-app:nth-child(4) {
+  background: radial-gradient(circle at 50% 50%, #fff 0 28%, #2f7cf6 30%);
+  border-radius: 50%;
+}
+
+.taskbar-tray {
+  position: absolute;
+  right: calc(var(--u) * 1.6);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 1);
+  font-size: calc(var(--u) * 1.05);
+  font-weight: 500;
+  color: #1a1c26;
+}
+
+.taskbar-tray img {
+  width: calc(var(--u) * 1.5);
+  height: calc(var(--u) * 1.5);
+}
+
+/* The app's borderless video window. It opens when a device connects and matches the phone's shape. */
+.window {
+  position: absolute;
+  top: calc(var(--u) * 4);
+  left: 50%;
+  width: calc(var(--u) * 22.6);
+  height: calc(var(--u) * 49);
+  overflow: hidden;
+  border-radius: calc(var(--u) * 0.7);
+  background: #000;
+  box-shadow:
+    0 calc(var(--u) * 2) calc(var(--u) * 5) rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transform: translateX(-50%) scale(0.96);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.scene:is([data-step="4"], [data-step="5"]) .window {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+.window-bar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(var(--u) * 2.3);
+  background: #181818;
+  color: #dcdcdc;
+  font-size: calc(var(--u) * 0.95);
+  transform: translateY(-100%);
+  transition: transform 0.25s ease;
+}
+
+.scene[data-step="4"] .window-bar,
+.scene[data-step="5"] .window:hover .window-bar {
+  transform: translateY(0);
+}
+
+.window-buttons {
+  position: absolute;
+  inset: 0 0 0 auto;
+  display: flex;
+}
+
+.window-buttons svg {
+  width: calc(var(--u) * 2.9);
+  height: 100%;
+  padding: calc(var(--u) * 0.75) calc(var(--u) * 1.05);
+  fill: none;
+  stroke: #e6e6e6;
+  stroke-width: 1;
+}
+
+/* iPhone */
+.phone {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: calc(var(--u) * 23);
+  aspect-ratio: 9 / 19.5;
+  padding: calc(var(--u) * 0.55);
+  border-radius: calc(var(--u) * 3.4);
+  background: #121214;
+  box-shadow:
+    0 calc(var(--u) * 2.5) calc(var(--u) * 6) rgba(26, 28, 38, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+@container (max-width: 640px) {
+  .phone {
+    --u: 1.5cqw;
+    right: calc(var(--u) * -1);
+  }
+}
+
+.phone-screen {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: calc(var(--u) * 2.9);
+  background: #000;
+  color: #fff;
+}
+
+.island {
+  position: absolute;
+  top: calc(var(--u) * 0.85);
+  left: 50%;
+  width: calc(var(--u) * 6);
+  height: calc(var(--u) * 1.75);
+  border-radius: calc(var(--u) * 1);
+  background: #000;
+  transform: translateX(-50%);
+}
+
+.status-bar {
+  position: absolute;
+  inset: calc(var(--u) * 1.05) calc(var(--u) * 1.9) auto calc(var(--u) * 2.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: calc(var(--u) * 1.05);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.status-icons {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.45);
+}
+
+.status-icons svg {
+  width: calc(var(--u) * 1.15);
+  height: calc(var(--u) * 1.15);
+  stroke-width: 2.6;
+}
+
+.status-signal {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(var(--u) * 0.12);
+  height: calc(var(--u) * 0.85);
+}
+
+.status-signal i {
+  width: calc(var(--u) * 0.22);
+  border-radius: 1px;
+  background: #fff;
+}
+
+.status-signal i:nth-child(1) { height: 40%; }
+.status-signal i:nth-child(2) { height: 60%; }
+.status-signal i:nth-child(3) { height: 80%; }
+.status-signal i:nth-child(4) { height: 100%; }
+
+.status-battery {
+  position: relative;
+  width: calc(var(--u) * 1.75);
+  height: calc(var(--u) * 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: calc(var(--u) * 0.25);
+  background: linear-gradient(90deg, #fff 0 78%, transparent 78%) calc(var(--u) * 0.1) 50% / calc(100% - var(--u) * 0.2) calc(100% - var(--u) * 0.2) no-repeat;
+}
+
+.status-battery::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: calc(var(--u) * -0.28);
+  width: calc(var(--u) * 0.15);
+  height: calc(var(--u) * 0.35);
+  border-radius: 0 1px 1px 0;
+  background: rgba(255, 255, 255, 0.45);
+  transform: translateY(-50%);
+}
+
+/* Control Center: a blurred layer over whatever was on screen, with its grid of tiles */
+.control-center {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 16, 24, 0.5);
+  backdrop-filter: blur(calc(var(--u) * 1.6)) saturate(1.5);
+  opacity: 0;
+  transform: translateY(-4%);
+  transition:
+    opacity 0.4s ease,
+    transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.scene:not([data-step="0"]) .control-center {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cc-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: calc(var(--u) * 4.1);
+  grid-auto-flow: dense;
+  gap: calc(var(--u) * 0.75);
+  padding: calc(var(--u) * 3.6) calc(var(--u) * 1.3) 0;
+}
+
+/* iOS pushes the grid back while a popover is open */
+.scene:not([data-step="0"], [data-step="1"]) .cc-grid {
+  opacity: 0.5;
+  filter: blur(calc(var(--u) * 0.25));
+}
+
+.cc-grid {
+  transition:
+    opacity 0.3s ease,
+    filter 0.3s ease;
+}
+
+.tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: calc(var(--u) * 1.45);
+  background: rgba(130, 130, 145, 0.36);
+  color: #fff;
+}
+
+.tile > svg {
+  width: calc(var(--u) * 1.9);
+  height: calc(var(--u) * 1.9);
+  stroke-width: 2.2;
+}
+
+.tile-2x2 {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.tile-1x2 {
+  grid-row: span 2;
+}
+
+.tile-2x1 {
+  grid-column: span 2;
+}
+
+.tile-connect {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(var(--u) * 0.5);
+  padding: calc(var(--u) * 0.8);
+}
+
+.cc-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--u) * 3.3);
+  height: calc(var(--u) * 3.3);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.cc-circle svg {
+  width: calc(var(--u) * 1.5);
+  height: calc(var(--u) * 1.5);
+  stroke-width: 2.4;
+}
+
+.cc-circle.is-green {
+  background: #30d158;
+}
+
+.cc-circle.is-blue {
+  background: #0a84ff;
+}
+
+.tile-media {
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: calc(var(--u) * 1);
+}
+
+.media-art {
+  width: calc(var(--u) * 2.8);
+  height: calc(var(--u) * 2.8);
+  border-radius: calc(var(--u) * 0.6);
+  background: linear-gradient(135deg, #ff9f0a, #ff375f 60%, #bf5af2);
+}
+
+.media-controls {
+  display: flex;
+  align-self: center;
+  gap: calc(var(--u) * 1.3);
+}
+
+.media-controls svg {
+  width: calc(var(--u) * 1.5);
+  height: calc(var(--u) * 1.5);
+  fill: #fff;
+  stroke: #fff;
+}
+
+.media-controls svg:nth-child(2) {
+  width: calc(var(--u) * 1.9);
+  height: calc(var(--u) * 1.9);
+}
+
+.tile-mirror {
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.scene:not([data-step="0"], [data-step="1"]) .tile-mirror {
+  background: #fff;
+  color: #1a1c26;
+}
+
+.tile-slider {
+  position: relative;
+  align-items: flex-end;
+  overflow: hidden;
+  padding-bottom: calc(var(--u) * 1.1);
+}
+
+.tile-slider::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  background: #fff;
+}
+
+.tile-brightness::before {
+  height: 62%;
+}
+
+.tile-volume::before {
+  height: 38%;
+}
+
+.tile-slider > svg {
+  position: relative;
+  color: #1a1c26;
+}
+
+.tile-focus {
+  justify-content: flex-start;
+  gap: calc(var(--u) * 0.7);
+  padding: 0 calc(var(--u) * 0.6);
+  font-size: calc(var(--u) * 1.1);
+  font-weight: 500;
+}
+
+/* The Screen Mirroring popover, opened from its tile */
+.popover {
+  position: absolute;
+  inset: calc(var(--u) * 18.6) calc(var(--u) * 1.6) auto;
+  padding: calc(var(--u) * 0.6);
+  border-radius: calc(var(--u) * 2);
+  background: rgba(48, 48, 54, 0.92);
+  box-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 5) rgba(0, 0, 0, 0.45);
+  font-size: calc(var(--u) * 1.2);
+  backdrop-filter: blur(calc(var(--u) * 2));
+  opacity: 0;
+  transform: scale(0.9);
+  transform-origin: 35% 0;
+  transition:
+    opacity 0.25s ease,
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.scene:not([data-step="0"], [data-step="1"]) .popover {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.popover svg {
+  flex: none;
+  width: calc(var(--u) * 1.6);
+  height: calc(var(--u) * 1.6);
+}
+
+.popover-title {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.7);
+  padding: calc(var(--u) * 0.7) calc(var(--u) * 0.8) calc(var(--u) * 0.9);
+  font-weight: 600;
+}
+
+.popover-row {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.9);
+  padding: calc(var(--u) * 0.85) calc(var(--u) * 0.8);
+  border-radius: calc(var(--u) * 1.1);
+  transition: background 0.2s ease;
+}
+
+.popover-row + .popover-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.scene:is([data-step="3"], [data-step="4"], [data-step="5"]) .popover-row-pc {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.popover-check {
+  margin-left: auto;
+  stroke-width: 3;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.25s ease,
+    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.scene:is([data-step="3"], [data-step="4"], [data-step="5"]) .popover-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.popover-stop {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.35s ease,
+    opacity 0.35s ease;
+}
+
+.popover-stop > span {
+  overflow: hidden;
+  margin-top: 0;
+  border-radius: calc(var(--u) * 1.1);
+  background: rgba(255, 255, 255, 0.12);
+  text-align: center;
+  font-weight: 500;
+  line-height: calc(var(--u) * 3);
+  transition: margin-top 0.35s ease;
+}
+
+.scene:is([data-step="4"], [data-step="5"]) .popover-stop {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.scene:is([data-step="4"], [data-step="5"]) .popover-stop > span {
+  margin-top: calc(var(--u) * 0.5);
+}
+
+
+/* The photo: sunset over water */
+.photo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    #1b2550 0%,
+    #4a3f75 26%,
+    #a7596d 44%,
+    #e8895a 55%,
+    #f8c38e 60.5%,
+    #e2a37a 61%,
+    #7a6f9a 70%,
+    #2a3460 100%
+  );
+}
+
+.photo-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 58%, #fff3c4 0 3.2%, rgba(255, 221, 160, 0.6) 4.5%, transparent 14%),
+    radial-gradient(ellipse 14% 22% at 50% 72%, rgba(255, 222, 170, 0.45) 0%, rgba(255, 222, 170, 0.18) 45%, transparent 100%);
+}
+
+.photo-hills {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 44%;
+  background: #121a33;
+  clip-path: polygon(0 100%, 0 60%, 12% 52%, 24% 63%, 37% 58%, 50% 72%, 66% 64%, 82% 76%, 100% 70%, 100% 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene * {
+    transition: none !important;
+  }
+}
