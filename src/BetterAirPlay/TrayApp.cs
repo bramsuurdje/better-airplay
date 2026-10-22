@@ -13,8 +13,9 @@ internal sealed class TrayApp : ApplicationContext
 
     readonly Settings settings = Settings.Load();
     readonly Receiver receiver = new();
-    readonly Icon onIcon = LoadIcon("app.ico");
-    readonly Icon offIcon = LoadIcon("app-off.ico");
+    readonly Icon onIcon = LoadIcon("app.ico", SystemInformation.SmallIconSize);
+    readonly Icon offIcon = LoadIcon("app-off.ico", SystemInformation.SmallIconSize);
+    readonly VideoWindowStyler videoWindow;
     readonly NotifyIcon tray = new();
     readonly ToolStripMenuItem statusItem = new() { Enabled = false };
     readonly ToolStripMenuItem codeItem = new() { Enabled = false };
@@ -25,6 +26,7 @@ internal sealed class TrayApp : ApplicationContext
 
     public TrayApp()
     {
+        videoWindow = new VideoWindowStyler(() => receiver.ProcessId);
         toggleItem.Click += (_, _) => SetReceiving(!receiver.IsRunning);
         pinItem.Click += (_, _) => TogglePin();
         autostartItem.Click += (_, _) => Autostart.Enabled = !Autostart.Enabled;
@@ -125,6 +127,7 @@ internal sealed class TrayApp : ApplicationContext
         if (ConnectionRequest.Match(line) is { Success: true } match)
         {
             var device = match.Groups[1].Value;
+            videoWindow.Title = device;
             Notify($"{device} is connecting", settings.Pin is null ? "" : $"If asked, enter code {settings.Pin}.");
         }
     }
@@ -157,6 +160,7 @@ internal sealed class TrayApp : ApplicationContext
         receiver.Stop();
         tray.Visible = false;
         logWindow?.Close();
+        videoWindow.Dispose();
         ExitThread();
     }
 
@@ -172,10 +176,10 @@ internal sealed class TrayApp : ApplicationContext
         base.Dispose(disposing);
     }
 
-    static Icon LoadIcon(string resource)
+    internal static Icon LoadIcon(string resource, Size size)
     {
         using var stream = typeof(TrayApp).Assembly.GetManifestResourceStream(resource)
             ?? throw new InvalidOperationException($"Missing embedded resource {resource}.");
-        return new Icon(stream, SystemInformation.SmallIconSize);
+        return new Icon(stream, size);
     }
 }

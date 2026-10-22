@@ -20,7 +20,8 @@ Right-click the tray icon to:
 - start the app when you sign in to Windows
 - open the receiver log
 
-Press **Alt+Enter** in the video window to toggle full screen.
+The video opens in its own dark window, titled with the name of the connected device. Press **Alt+Enter** there to
+toggle full screen.
 
 ### If your PC doesn't show up
 

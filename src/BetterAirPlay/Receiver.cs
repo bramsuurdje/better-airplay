@@ -29,6 +29,7 @@ internal sealed class Receiver
     public event Action<int>? Crashed;
 
     public bool IsRunning => process is not null;
+    public int? ProcessId => process?.Id;
     public IEnumerable<string> Log => log;
 
     public void Start(string name, string? pin)
