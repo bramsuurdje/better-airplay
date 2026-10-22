@@ -100,6 +100,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         # Creates the tag on the built commit. Tags pushed with GITHUB_TOKEN don't trigger workflows, so this can't loop.
+        # The website links to releases/latest/download/BetterAirPlay-Setup.exe, so a copy without the version is attached too.
         run: |
+          cp dist/BetterAirPlay-Setup-*.exe dist/BetterAirPlay-Setup.exe
           gh release create "v$VERSION_PREFIX.$GITHUB_RUN_NUMBER" dist/*.exe \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --generate-notes --latest
