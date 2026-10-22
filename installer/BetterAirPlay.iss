@@ -56,7 +56,8 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 ; Without an inbound rule, Apple devices never discover the receiver. Private networks only.
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#AppName} receiver"""; Flags: runhidden
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""{#AppName} receiver"" dir=in action=allow profile=private program=""{app}\receiver\bin\uxplay.exe"" enable=yes"; Flags: runhidden
-Filename: "{app}\{#AppExe}"; Description: "Start {#AppName}"; Flags: postinstall nowait skipifsilent runasoriginaluser
+; Also runs on silent installs: the in-app updater (Updater.cs) installs with /SILENT and relies on this to restart the app.
+Filename: "{app}\{#AppExe}"; Description: "Start {#AppName}"; Flags: postinstall nowait runasoriginaluser
 
 [UninstallRun]
 ; Only stop processes running from this install, not some other UxPlay.

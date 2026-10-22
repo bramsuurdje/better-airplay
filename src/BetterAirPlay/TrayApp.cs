@@ -22,7 +22,12 @@ internal sealed class TrayApp : ApplicationContext
     readonly ToolStripMenuItem toggleItem = new();
     readonly ToolStripMenuItem pinItem = new("Require connection code");
     readonly ToolStripMenuItem autostartItem = new("Start with Windows");
+    readonly ToolStripMenuItem checkAtStartupItem = new("Check for updates at startup");
+    readonly ToolStripMenuItem updateItem = new();
     LogWindow? logWindow;
+    Update? availableUpdate;
+    bool installingUpdate;
+    Action? onBalloonClick;
 
     public TrayApp()
     {
@@ -30,6 +35,12 @@ internal sealed class TrayApp : ApplicationContext
         toggleItem.Click += (_, _) => SetReceiving(!receiver.IsRunning);
         pinItem.Click += (_, _) => TogglePin();
         autostartItem.Click += (_, _) => Autostart.Enabled = !Autostart.Enabled;
+        checkAtStartupItem.Click += (_, _) => ToggleCheckAtStartup();
+        updateItem.Click += (_, _) =>
+        {
+            if (availableUpdate is null) CheckForUpdates(manual: true);
+            else InstallUpdate();
+        };
 
         var menu = new ContextMenuStrip();
         menu.Items.AddRange(
@@ -42,7 +53,9 @@ internal sealed class TrayApp : ApplicationContext
             new ToolStripMenuItem("Change name…", null, (_, _) => Rename()),
             pinItem,
             autostartItem,
+            checkAtStartupItem,
             new ToolStripSeparator(),
+            updateItem,
             new ToolStripMenuItem("Show log", null, (_, _) => ShowLog()),
             new ToolStripMenuItem("Quit", null, (_, _) => Quit()),
         ]);
@@ -51,6 +64,8 @@ internal sealed class TrayApp : ApplicationContext
 
         tray.ContextMenuStrip = menu;
         tray.DoubleClick += (_, _) => SetReceiving(!receiver.IsRunning);
+        tray.BalloonTipClicked += (_, _) => onBalloonClick?.Invoke();
+        tray.BalloonTipClosed += (_, _) => onBalloonClick = null;
         receiver.LineReceived += OnReceiverLine;
         receiver.Crashed += OnReceiverCrashed;
 
@@ -58,6 +73,7 @@ internal sealed class TrayApp : ApplicationContext
         if (settings.Receiving) StartReceiver();
         Refresh();
         tray.Visible = true;
+        if (settings.CheckForUpdates) CheckForUpdates(manual: false);
     }
 
     void SetReceiving(bool receiving)
@@ -77,7 +93,7 @@ internal sealed class TrayApp : ApplicationContext
         }
         catch (Exception e)
         {
-            MessageBox.Show($"Could not start the receiver.\n\n{e.Message}", Program.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            ShowError("Could not start the receiver.", e);
         }
     }
 
@@ -108,6 +124,66 @@ internal sealed class TrayApp : ApplicationContext
         {
             Notify($"Connection code: {settings.Pin}", "Devices enter this code the first time they connect.");
         }
+    }
+
+    void ToggleCheckAtStartup()
+    {
+        settings.CheckForUpdates = !settings.CheckForUpdates;
+        settings.Save();
+        Refresh();
+    }
+
+    /// Looks for a newer release. A manual check always reports back; the startup check only speaks up
+    /// when there is an update.
+    async void CheckForUpdates(bool manual)
+    {
+        try
+        {
+            availableUpdate = await Updater.FindAsync();
+        }
+        catch (Exception e) // async void: anything unhandled here would crash the app
+        {
+            if (manual) ShowError("Could not check for updates.", e);
+            return;
+        }
+        Refresh();
+
+        if (availableUpdate is not { } update)
+        {
+            if (manual) MessageBox.Show($"You have the latest version ({Updater.CurrentVersion}).", Program.AppName);
+            return;
+        }
+        if (!manual)
+        {
+            Notify($"Update available: {update.Version}", "Click here to install it.", onClick: InstallUpdate);
+            return;
+        }
+        var answer = MessageBox.Show(
+            $"Version {update.Version} is available. You have {Updater.CurrentVersion}.\n\nInstall it now? The receiver stops briefly.",
+            Program.AppName, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        if (answer == DialogResult.Yes) InstallUpdate();
+    }
+
+    async void InstallUpdate()
+    {
+        if (availableUpdate is not { } update || installingUpdate) return;
+        installingUpdate = true;
+        Refresh();
+        Notify($"Downloading version {update.Version}", "It installs as soon as the download finishes.");
+        try
+        {
+            if (await Updater.InstallAsync(update))
+            {
+                Quit(); // the installer starts the new version when it's done
+                return;
+            }
+        }
+        catch (Exception e) // async void: anything unhandled here would crash the app
+        {
+            ShowError("Could not install the update.", e);
+        }
+        installingUpdate = false;
+        Refresh();
     }
 
     void ShowLog()
@@ -146,14 +222,28 @@ internal sealed class TrayApp : ApplicationContext
         codeItem.Visible = running && settings.Pin is not null;
         toggleItem.Text = running ? "Stop receiving" : "Start receiving";
         pinItem.Checked = settings.Pin is not null;
+        checkAtStartupItem.Checked = settings.CheckForUpdates;
+        updateItem.Enabled = !installingUpdate;
+        updateItem.Text = (installingUpdate, availableUpdate) switch
+        {
+            (true, _) => "Downloading update…",
+            (false, { } update) => $"Install update {update.Version}",
+            (false, null) => "Check for updates…",
+        };
         tray.Icon = running ? onIcon : offIcon;
 
         var tooltip = running ? $"{Program.AppName}: {settings.ReceiverName}" : $"{Program.AppName}: off";
         tray.Text = tooltip.Length > 63 ? tooltip.Substring(0, 63) : tooltip; // NotifyIcon throws above 63 chars
     }
 
-    void Notify(string title, string text, ToolTipIcon icon = ToolTipIcon.Info) =>
+    void Notify(string title, string text, ToolTipIcon icon = ToolTipIcon.Info, Action? onClick = null)
+    {
+        onBalloonClick = onClick;
         tray.ShowBalloonTip(5000, title, text.Length == 0 ? title : text, icon);
+    }
+
+    static void ShowError(string message, Exception e) =>
+        MessageBox.Show($"{message}\n\n{e.Message}", Program.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
 
     void Quit()
     {

@@ -19,6 +19,7 @@ Right-click the tray icon to:
 - require a 4-digit connection code. The code is shown in the menu, and devices enter it once.
 - start the app when you sign in to Windows
 - open the receiver log
+- check for updates. The app also checks at startup and offers to install new versions; you can turn that off in the menu.
 
 The video opens in its own dark window, titled with the name of the connected device. Press **Alt+Enter** there to
 toggle full screen.
